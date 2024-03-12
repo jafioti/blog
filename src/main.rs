@@ -16,7 +16,7 @@ async fn main() {
         .route("/", get(index));
 
     axum::serve(
-        tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap(),
+        tokio::net::TcpListener::bind("0.0.0.0:8090").await.unwrap(),
         app,
     )
     .await
@@ -24,9 +24,11 @@ async fn main() {
 }
 
 async fn static_files(Path(path): Path<String>) -> Result<file::File, StatusCode> {
-    file::File::load(format!("{}/static/{path}", env!("CARGO_MANIFEST_DIR")))
-        .await
-        .map_err(|_| StatusCode::NOT_FOUND)
+    match file::File::load(format!("{}/static/{path}", env!("CARGO_MANIFEST_DIR")))
+        .await {
+        Ok(f) => Ok(f.compress().unwrap()),
+        Err(_) => Err(StatusCode::NOT_FOUND),
+    }
 }
 
 async fn index() -> Html<String> {
